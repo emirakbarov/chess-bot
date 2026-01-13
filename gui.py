@@ -15,6 +15,7 @@ class Board:
         self.item_to_piece = {}
         self.item_to_pos = {}
         self.game = Game() # nitialisae the new game 
+        self.game.start_board()
 
         # Drag state 
         self.drag_item = None
@@ -54,19 +55,6 @@ class Board:
         self.item_to_piece[item_id] = piece
         self.item_to_pos[item_id] = (r, c)
 
-
-    # Center piece on square 
-    def square_center(self, row, col):
-        x = col * SQUARE + SQUARE // 2
-        y = row * SQUARE + SQUARE // 2
-        return x, y
-    
-    # Convert coordinates to squares for drag
-    def xy_to_rc(self, x, y):
-        c = x // SQUARE
-        r = y // SQUARE
-        return int(r), int(c)
-    
     # Drawing function      
     def draw_board(self):
         for r in range(8):
@@ -88,7 +76,19 @@ class Board:
 
                     piece = Piece(piece_type, piece_colour, None, None)
                     self.add_piece(piece, r, c)
-        self.game.upddate
+        #self.game.upddate
+
+    # Center piece on square 
+    def square_center(self, row, col):
+        x = col * SQUARE + SQUARE // 2
+        y = row * SQUARE + SQUARE // 2
+        return x, y
+    
+    # Convert coordinates to squares for drag
+    def xy_to_rc(self, x, y):
+        c = x // SQUARE
+        r = y // SQUARE
+        return int(r), int(c)
 
     # Onclick
     def on_drag_start(self, event):
@@ -112,12 +112,17 @@ class Board:
 
     # When piece is releaed 
     def on_drag_release(self, event):
-        self.root.config(cursor="arrow")
-        rc = self.xy_to_rc(event.x, event.y)
-        r,c = rc
-        self.canvas.coords(self.drag_item, self.square_center(r,c))
-        self.canvas.tag_raise("piece")
-        
-        from_rc = self.item_to_pos[self.drag_item]
-        to_rc = (r, c)
-        self.game.update_game(from_rc, to_rc)
+            self.root.config(cursor="arrow")
+            rc = self.xy_to_rc(event.x, event.y)
+            r,c = rc
+            from_rc = self.item_to_pos[self.drag_item]
+            to_rc = (r, c)
+            if self.game.check_legal_move(from_rc, to_rc, self.item_to_piece[self.drag_item]):
+                self.game.update_board_state(from_rc, to_rc)
+                self.canvas.coords(self.drag_item, self.square_center(r,c))
+                self.item_to_pos[self.drag_item] = to_rc
+                self.canvas.tag_raise("piece")
+            else:
+                x, y = self.square_center(*from_rc)
+                self.canvas.coords(self.drag_item, x, y)
+                print("illegal move")
