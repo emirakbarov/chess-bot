@@ -8,7 +8,10 @@ class Game:
     def __init__(self):
         self.first_move = np.choice([0,1])
         self.turn = "w"
-
+        self.king_rook_moved = {
+            "w": [False, False],
+            "b": [False, False]
+        }
         self.pieces_captured_by = { 
             "w": [],
             "b": []
@@ -30,7 +33,6 @@ class Game:
         previous_occupant = self.board[r_prev][c_prev]
         self.board[r_prev][c_prev] = None
         self.board[r_new][c_new] = previous_occupant
-
 
     def decode_fen(self, fen_string):
 
@@ -66,7 +68,7 @@ class Game:
             if (target.colour == piece.colour):
                 return False
             else: self.capture_piece(target, piece)
-        
+
         if piece.type == "N":
             return [translation_r, translation_c] in (STATIC_MOVES[piece.type])
         elif piece.type == "P":
@@ -85,6 +87,19 @@ class Game:
         # Direction
         dir_r = 0 if translation_r == 0 else (1 if translation_r > 0 else -1)
         dir_c = 0 if translation_c == 0 else (1 if translation_c > 0 else -1)
+
+        if piece.type == "K":
+            if abs(translation_c) == 2:
+                if self.king_rook_moved[piece.colour] == False:
+                    print("Castles")
+                    return False
+                else:
+                    return False
+            elif (abs(translation_c) <= 1 or abs(translation_r) <= 1)  and (translation_r != 0 or translation_c != 0):
+                self.board[r_new][c_new] = piece
+                return True
+            
+            return False        
 
 
         if piece.type == "R": 
