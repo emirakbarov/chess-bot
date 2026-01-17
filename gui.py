@@ -112,17 +112,25 @@ class Board:
 
     # When piece is releaed 
     def on_drag_release(self, event):
-            self.root.config(cursor="arrow")
-            rc = self.xy_to_rc(event.x, event.y)
-            r,c = rc
-            from_rc = self.item_to_pos[self.drag_item]
-            to_rc = (r, c)
-            if self.game.check_legal_move(from_rc, to_rc, self.item_to_piece[self.drag_item]):
-                self.game.update_board_state(from_rc, to_rc)
-                self.canvas.coords(self.drag_item, self.square_center(r,c))
-                self.item_to_pos[self.drag_item] = to_rc
-                self.canvas.tag_raise("piece")
-            else:
-                x, y = self.square_center(*from_rc)
-                self.canvas.coords(self.drag_item, x, y)
-                print("illegal move")
+        self.root.config(cursor="arrow")
+        r, c = self.xy_to_rc(event.x, event.y)
+
+        from_rc = self.item_to_pos[self.drag_item]
+        to_rc = (r, c)
+
+        if self.game.make_move(from_rc, to_rc):
+
+            for item, pos in list(self.item_to_pos.items()):
+                if pos == to_rc and item != self.drag_item:
+                    self.canvas.delete(item)
+                    del self.item_to_pos[item]
+                    del self.item_to_piece[item]
+                    break
+
+            self.canvas.coords(self.drag_item, self.square_center(r, c))
+            self.item_to_pos[self.drag_item] = to_rc
+            self.canvas.tag_raise("piece")
+        else:
+            x, y = self.square_center(*from_rc)
+            self.canvas.coords(self.drag_item, x, y)
+            print("illegal move")

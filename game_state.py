@@ -8,9 +8,13 @@ class Game:
     def __init__(self):
         self.first_move = np.choice([0,1])
         self.turn = "w"
+        self.rook_indeces = {
+            "R1": None,
+            "R2": None
+        }
         self.king_rook_moved = {
-            "w": [False, False],
-            "b": [False, False]
+            "w": [False, False, False],
+            "b": [False, False, False]
         }
         self.pieces_captured_by = { 
             "w": [],
@@ -23,16 +27,29 @@ class Game:
     def start_board(self):
         return self.decode_fen(self.game_starting_position)
 
-    def update_board_state(self, from_rc, to_rc):
-        if self.turn == "b":
-            self.turn = "w" 
-        elif self.turn == "w":
-            self.turn = "b"
+    def make_move(self, from_rc, to_rc):
         r_prev, c_prev = from_rc
         r_new, c_new = to_rc
-        previous_occupant = self.board[r_prev][c_prev]
+
+        piece = self.board[r_prev][c_prev]
+        target = self.board[r_new][c_new]
+
+        if not piece:
+            return False
+
+        if not self.check_legal_move(from_rc, to_rc, piece):
+            return False
+
         self.board[r_prev][c_prev] = None
-        self.board[r_new][c_new] = previous_occupant
+        self.board[r_new][c_new] = piece
+
+        if target:
+            self.pieces_captured_by[piece.colour].append(target)
+            print(self.pieces_captured_by)
+
+        self.turn = "b" if self.turn == "w" else "w"
+
+        return True
 
     def decode_fen(self, fen_string):
 
@@ -48,9 +65,9 @@ class Game:
                 col += int(square_value)
             else:
                 if square_value.isupper():
-                    output[row][col] = Piece(square_value, "W", None, None)
+                    output[row][col] = Piece(square_value, "w", None, None)
                 else:
-                    output[row][col] = Piece(square_value.upper(), "B", None, None)
+                    output[row][col] = Piece(square_value.upper(), "b", None, None)
                 
                 col += 1
         return output
@@ -64,10 +81,9 @@ class Game:
 
         target = self.board[r_new][c_new]
         
-        if (target):
-            if (target.colour == piece.colour):
-                return False
-            else: self.capture_piece(target, piece)
+        if target and target.colour == piece.colour:
+            return False
+
 
         if piece.type == "N":
             return [translation_r, translation_c] in (STATIC_MOVES[piece.type])
@@ -81,6 +97,9 @@ class Game:
             if translation_c == 0 and translation_r == 2 * direction and r_prev == start_row:
                 if self.board[r_prev + direction][c_prev] is None and self.board[r_new][c_new] is None:
                     return True
+                
+            if abs(translation_r) == 1 and abs(translation_c) == abs(translation_r) and target:
+                return True 
 
             return False
 
@@ -91,13 +110,14 @@ class Game:
         if piece.type == "K":
             if abs(translation_c) == 2:
                 if self.king_rook_moved[piece.colour] == False:
+                    target
                     print("Castles")
                     return False
                 else:
                     return False
-            elif (abs(translation_c) <= 1 or abs(translation_r) <= 1)  and (translation_r != 0 or translation_c != 0):
-                self.board[r_new][c_new] = piece
+            elif abs(translation_c) <= 1 and abs(translation_r) <= 1:
                 return True
+
             
             return False        
 
@@ -116,7 +136,3 @@ class Game:
             c += dir_c
 
         return True
-    
-    def capture_piece(self, target, piece):
-        capturing_colour = piece.colour
-        self.pieces_captured_by[capturing_colour].append(target)
